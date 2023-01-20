@@ -1,9 +1,6 @@
 package ru.uspehovmax.servicefirst
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.Service
+import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -13,24 +10,33 @@ import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.*
 
 /**
- * Сервисы работают на главном потоке, если не предусмотреть иное, чтобы не блокировать
- * Гл.поток
+ * Является устаревшим Deprecated
  */
-class MyForegroundService : Service() {
+class MyIntentService : IntentService(NAME) {
 
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
     override fun onCreate() {
         super.onCreate()
-        log("MyForegroundService: onCreate")
+        log("MyIntentService: onCreate")
+        setIntentRedelivery(true)
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, createNotification())
+    }
+
+    // Выполняется в другом потоке
+    override fun onHandleIntent(intent: Intent?) {
+        log("MyIntentService: onHandleIntent: ")
+        for (i in 0 until 50) {
+            Thread.sleep(1_000)
+            log("Timer: $i")
+        }
     }
 
     /*
     * Начиная с 8 версии Андроид API>=27 начались проблемы с Сервисами
     * */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        log("MyForegroundService: onStartCommand")
+        log("MyIntentService: onStartCommand")
         coroutineScope.launch {
             for (i in 0 until 50) {
                 delay(1_000)
@@ -38,22 +44,20 @@ class MyForegroundService : Service() {
             }
             stopSelf()
         }
-/*          Вместо стандартного вызова супер.метода можно сипользовать один из 3-х:
+//          Вместо стандартного вызова супер.метода можно сипользовать один из 3-х:
         // START_STICKY  // при перезапуске intent, кот.передаётся onStartCommand = null
         // START_NOT_STICKY // сервис не будет пересоздан
         // START_REDELIVER_INTENT // при перезапуске intent сохранится и начнется с 15
-//        return super.onStartCommand(intent, flags, startId)*/
+//        return super.onStartCommand(intent, flags, startId)
         return START_STICKY
     }
 
 
     override fun onDestroy() {
         super.onDestroy()
-        log("MyForegroundService: onDestroy")
+        log("MyIntentService: onDestroy")
         coroutineScope.cancel()
-
     }
-
 
     private fun createNotificationChannel() {
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
@@ -81,8 +85,9 @@ class MyForegroundService : Service() {
         TODO("Not yet implemented")
     }
 
+
     private fun log(message: String) {
-        Log.d("SERVICE_MESSAGE", "MyForegroundService: $message")
+        Log.d("SERVICE_MESSAGE", "MyIntentService: $message")
     }
 
     companion object {
@@ -90,12 +95,13 @@ class MyForegroundService : Service() {
         // название уведомлений - показываются пользователю - именование!
         private const val CHANNEL_NAME = "channel name"
         private const val NOTIFICATION_ID = 1
+        private const val NAME = "MyIntentService"
 
 
 //        private const val EXTRA_START = "start"
 
         fun newIntent(context: Context): Intent {
-            return Intent(context, MyForegroundService::class.java)/*.apply {
+            return Intent(context, MyIntentService::class.java)/*.apply {
 //                putExtra(EXTRA_START, start)
             }*/
         }
