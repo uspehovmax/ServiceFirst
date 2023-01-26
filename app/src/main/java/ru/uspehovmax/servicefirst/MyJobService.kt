@@ -12,19 +12,28 @@ import android.util.Log
 import kotlinx.coroutines.*
 
 /**
+Устанавливаются параметры: какая работа и когда должна быть выполнена
+и условия запуска/остановки
+можно запускать сервис тольк при наличии wifi и зарядки
+Вариант использования - загрузка данных в БД из сети интернет - делать это в фоне
 
  */
 class MyJobService : JobService() {
 
+    /* основной метод - выполнение на гл.потоке
+    // возвращаемый тип : Boolean - выполняется ли работа сейчас
+    // true - обозначает сервис работает, т.к. работает корутина */
     override fun onStartJob(params: JobParameters?): Boolean {
         log("MyJobService: onStartCommand")
-        // достаем из очереди
+/*      Если не использовать очередь, то после перезапуска сервиса выполнение будет повтряться
+с уже загруженными данными. Это плохое решение. Используем Очередь
+        */
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             coroutineScope.launch {
                 var workItem = params?.dequeueWork()
                 while (workItem != null) {
                     val page = workItem.intent.getIntExtra(PAGE, 0)
-                    for (i in 0 until 6 ) {
+                    for (i in 0 until 6) {
                         delay(1_000)
                         log("Timer: $i page:$page")
                     }
@@ -39,7 +48,7 @@ class MyJobService : JobService() {
         return true // true - обозначает сервис работает, т.к. рабоббтает корутина
     }
 
-    // вызывается когда система грохает сервис
+    // вызывается когда сама система грохает сервис, если мы завершаем - метод не выполняется
     override fun onStopJob(params: JobParameters?): Boolean {
         return true
     }

@@ -8,8 +8,8 @@ import android.util.Log
 import kotlinx.coroutines.*
 
 /**
- * Сервисы работают на главном потоке, если не предусмотреть иное, чтобы не блокировать
- * Гл.поток
+ * Сервисы работают на главном потоке, если не предусмотреть иное, чтобы не блокировать Гл.поток
+ *
  */
 class MyService : Service() {
 
@@ -19,26 +19,25 @@ class MyService : Service() {
         log("onCreate")
     }
 
-    /*
-    * Начиная с 8 версии Андроид API>=27 начались проблемы с Сервисами
-    * */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         log("onStartCommand")
         val start = intent?.getIntExtra(EXTRA_START, 0) ?:0
         coroutineScope.launch {
             for (i in start until start+10) {
                 delay(1_000)
-                log("Timer: $i")
+                log("Timer: $i - thread id: ${Thread.currentThread().id}")
             }
         }
-//          Вместо стандартного вызова супер.метода можно сипользовать один из 3-х:
+
+/*      ПЕРЕЗАПУСК Services после их "уничтожения"
+        Вместо стандартного вызова супер.метода можно сипользовать один из 3-х:
         // START_STICKY  // при перезапуске intent, кот.передаётся onStartCommand = null
         // START_NOT_STICKY // сервис не будет пересоздан
         // START_REDELIVER_INTENT // при перезапуске intent сохранится и начнется с 15
-//        return super.onStartCommand(intent, flags, startId)
+      return super.onStartCommand(intent, flags, startId)
+*/
         return START_REDELIVER_INTENT
     }
-
 
     override fun onDestroy() {
         super.onDestroy()
@@ -46,7 +45,6 @@ class MyService : Service() {
         coroutineScope.cancel()
 
     }
-
 
     override fun onBind(p0: Intent?): IBinder? {
         TODO("Not yet implemented")
@@ -57,7 +55,6 @@ class MyService : Service() {
     }
 
     companion object {
-
         private const val EXTRA_START = "start"
 
         fun newIntent(context: Context, start: Int): Intent {

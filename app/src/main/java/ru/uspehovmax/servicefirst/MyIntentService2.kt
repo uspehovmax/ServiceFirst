@@ -18,24 +18,21 @@ import kotlinx.coroutines.*
  * 4. не возвращает ничего
  * ! Нужно создавать NotificationChannel и Notification при API>=26
  */
-class MyIntentService : IntentService(NAME) {
+class MyIntentService2 : IntentService(NAME) {
 
     override fun onCreate() {
         super.onCreate()
-        log("MyIntentService: onCreate")
+        log("MyIntentService2: onCreate")
         setIntentRedelivery(true)  // тоже самое что START_REDELIVER_INTENT, если false -START_STICKY
-        // сначала создаётся канал
-        createNotificationChannel()
-        // затем запуск сервиса
-        startForeground(NOTIFICATION_ID, createNotification())
     }
 
     // Выполняется в другом потоке
     override fun onHandleIntent(intent: Intent?) {
-        log("MyIntentService: onHandleIntent: ")
-        for (i in 0 until 50) {
+        log("MyIntentService2: onHandleIntent: ")
+        val page = intent?.getIntExtra(PAGE,0) ?: 0
+        for (i in 0 until 10) {
             Thread.sleep(1_000)
-            log("Timer: $i - thread id: ${Thread.currentThread().id}")
+            log("Timer: $i, page: $page, thread id: ${Thread.currentThread().id}")
         }
     }
 
@@ -58,46 +55,21 @@ class MyIntentService : IntentService(NAME) {
 */
     override fun onDestroy() {
         super.onDestroy()
-        log("MyIntentService: onDestroy")
+        log("MyIntentService2: onDestroy")
     }
-
-    private fun createNotificationChannel() {
-        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-
-        // Проверка версии Андроид на возможность создания канала notificationManager.createNotificationChannel
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationChannel = NotificationChannel(
-                CHANNEL_ID,
-                CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_DEFAULT
-            )
-            notificationManager.createNotificationChannel(notificationChannel)
-        }
-
-    }
-
-    private fun createNotification() = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Title")
-            .setContentText("Text")
-            .setSmallIcon(R.drawable.ic_launcher_background)
-            .build()
 
     private fun log(message: String) {
-        Log.d("SERVICE_MESSAGE", "MyIntentService: $message")
+        Log.d("SERVICE_MESSAGE", "MyIntentService2: $message")
     }
 
     companion object {
-        private const val CHANNEL_ID = "channel id"
-        // название уведомлений - показываются пользователю - именование!
-        private const val CHANNEL_NAME = "channel name"
-        private const val NOTIFICATION_ID = 1
-        private const val NAME = "MyIntentService"
-//        private const val EXTRA_START = "start"
 
-        fun newIntent(context: Context): Intent {
-            return Intent(context, MyIntentService::class.java)/*.apply {
-//                putExtra(EXTRA_START, start)
-            }*/
+        private const val NAME = "MyIntentService2"
+        private const val PAGE = "page"
+        fun newIntent(context: Context, page: Int): Intent {
+            return Intent(context, MyIntentService2::class.java).apply {
+                putExtra(PAGE, page)
+            }
         }
     }
 

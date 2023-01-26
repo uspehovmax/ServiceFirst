@@ -14,10 +14,21 @@ import kotlinx.coroutines.*
 
 /**
  * Сервисы работают на главном потоке, если не предусмотреть иное, чтобы не блокировать
- * Гл.поток
+ * Foreground Service – это сервис, о котором пользователь осведомлен
+ * Уведомление через Notification, NotificationManager
+ * Пример foreground сервиса – отображение нотификации при проигрывании музыки в приложении-плеере.
+ * Процесс в котором работает foreground сервис имеет больший приоритет, чем процесс с background сервисом.
+ * В примере с плеером foreground сервис выполняет сразу две функции:
+1. Говорит системе, что этот процесс убивать не надо, т.к. пользователь взаимодействует с ним;
+2. Обрабатывает нажатия на кнопки в нотификации.
+https://itsobes.ru/AndroidSobes/chto-takoe-background-i-foreground-service/
  */
 class MyForegroundService : Service() {
-
+    /*
+    * Начиная с 8 версии Андроид API>=26 начались проблемы с Сервисами
+    * 1. Нужно уведомлять пользователя о запущенных сервисах
+    * 2. Нужно создавать каналы
+    * */
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
     override fun onCreate() {
         super.onCreate()
@@ -26,16 +37,14 @@ class MyForegroundService : Service() {
         startForeground(NOTIFICATION_ID, createNotification())
     }
 
-    /*
-    * Начиная с 8 версии Андроид API>=27 начались проблемы с Сервисами
-    * */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         log("MyForegroundService: onStartCommand")
         coroutineScope.launch {
             for (i in 0 until 50) {
                 delay(1_000)
-                log("Timer: $i")
+                log("Timer: $i - thread id: ${Thread.currentThread().id}")
             }
+            // остановка корутины
             stopSelf()
         }
 /*          Вместо стандартного вызова супер.метода можно сипользовать один из 3-х:
@@ -46,14 +55,13 @@ class MyForegroundService : Service() {
         return START_STICKY
     }
 
-
     override fun onDestroy() {
         super.onDestroy()
         log("MyForegroundService: onDestroy")
+        // остановка корутины, если сервис прибивается системой
         coroutineScope.cancel()
 
     }
-
 
     private fun createNotificationChannel() {
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
@@ -76,7 +84,6 @@ class MyForegroundService : Service() {
             .setSmallIcon(R.drawable.ic_launcher_background)
             .build()
 
-
     override fun onBind(p0: Intent?): IBinder? {
         TODO("Not yet implemented")
     }
@@ -89,8 +96,7 @@ class MyForegroundService : Service() {
         private const val CHANNEL_ID = "channel id"
         // название уведомлений - показываются пользователю - именование!
         private const val CHANNEL_NAME = "channel name"
-        private const val NOTIFICATION_ID = 1
-
+        private const val NOTIFICATION_ID = 1 // не должно быть  = 0
 
 //        private const val EXTRA_START = "start"
 
